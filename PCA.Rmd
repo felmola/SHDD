@@ -1,0 +1,349 @@
+---
+title: "Expenditure"
+author: "Mads Randen"
+date: "20 10 2022"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+#Reading the packages I need on order to perform the analysis: 
+rm(list = ls())
+
+library(haven)
+library(readr)
+library(ggplot2)
+library(stargazer)
+library(cowplot)
+library(ggridges)
+library(tidyverse)
+
+
+ setwd("C:/Users/felmo/Dropbox/1_personal/_maestria_unibo_(operacional)/_statistics_hdd/_final_project/wholesales")
+
+#Can perform PCA, Cluster analysis. Not many categorical varibles. Discriminant analysis may be differcult. 
+
+
+```
+
+### Reading the data
+
+The data file is csv-file. The observations are separated by commas. We use the the read_csc-function to read the data.
+
+```{r}
+readLines("Wholesale_customers_data.csv", n=10) #Overview of the file
+
+expenditure <- read_csv("Wholesale_customers_data.csv") #Reading the data
+
+
+```
+### Descriptive statistics
+To get an idea of the data, we generate some descriptive statistics: 
+
+
+```{r}
+str(expenditure)
+
+summary(expenditure)
+
+```
+Principal component analysis aims to reduce the dimension of the data. The goal is to do this without loosing too much information from the original data. In other words, the method will always be a tradeoff between the number of dimensions and how much variability we loose in the process. 
+
+When computing the principal components, we use the variance of the original data. If the variables have a different scale or unit, the different variables will have a very different variance. This will influence the principal components. 
+
+From our data we can see that the variable "Fresh" has a much larger mean than "Delicatessen". Also the variance is much larger. Since we do not want that our principal components to be dominated by the variables with the largest variance, we can scale the data: 
+
+```{r}
+expenditure_s <- data.frame(scale(expenditure))
+
+summary(expenditure_s)
+
+```
+The data is now centered around zero. 
+
+### Correlation matrix
+```{r, results='asis'}
+
+cor.m <- cor(expenditure_s[,3:8])
+
+stargazer(cor.m, title = "Correlation matrix", header = F, type = "latex") #Plot in a table
+
+```
+The correlation matrix shows strong correlation between some of the variables in the data set. For instance, "Grocesary" and "Detergents" have correlation of 0.925, and "Grocesary" and "milk" have a correlation of 0.728. 
+
+Correlation between the variables are a condition in order to perform principal component analysis. It would be impossible to reduce the dimension of the data in meaningful way without having some correlation.
+
+### The Principal Component Analysis
+
+```{r}
+pca <- princomp(expenditure_s[,3:8], cor = T)
+
+pca
+summary(pca) #Should use to components based on the eigenvalues
+
+
+
+```
+We perform the principal component analysis on the six continous variables. We use the correlation matrix to perform the analysis. The first component explains about 44 percent of the variation in the original data. The question now is how many components we should choose: 
+
+### The number of components
+
+There are several different methods we can use in order of choosing the right amount of components. The the first one is the scree plot: 
+
+```{r}
+screeplot(pca, npcs =6, type = c("lines"),ylim=c(0,4)) #Two or three comp
+```
+
+The plot has the eigenvalues (the variance) on the y-axis and the number of components on the x-axis. We are looking for the "elbow" in the plot. In this case, the elbow is present at the third component. We can therefore limit ourselves and decide to not use more than three components. 
+
+There are several different methods on deciding on how many components that are suitible however. We can also take a look at the eigenvalues of the components: 
+```{r}
+
+eigenval<-(pca$sdev)^2
+round(eigenval, 2)
+
+```
+
+The rule is that we are choosing the components with eigenvalues bigger than one. The first and second component have eigenvalues of 2.64 and 1.7 respectively. This meets the condition of an eigenvalue larger than one. The third component however has an eigenvalue of 0.74. This method favors only two components. 
+
+We can also take a look at the total variance explained by the components. All the six components have a cumulative proportion of variance explained equal to one. This means that the components capture all the variation of the original data. However the goal is to reduce the dimensions of the data. We can therefore set a limit of how much of variance the components should explain. A normal threshold is around 70-80 percent of the total variance.   
+
+```{r}
+
+plot(cumsum(pca$sdev^2 / sum(pca$sdev^2)), type="b", xlab = "Number of components",
+     ylab = "Variance explained", main="Cumulative variance explained",
+     sub = "Threshold of 0.7", ylim = c(0,1))
+abline(h=0.7, col="red", lty="dotted")
+
+```
+
+The plot shows us that two components can explain more than 70 percent of the variability of the original data. This may be sufficient. 
+
+The analysis so far point towards choosing two or three components. We proceed to calculate the loadings of the components. This may also give information about how many components that are suitable. 
+
+
+```{r}
+mat<-matrix(0,6,6) #Create an empty six by six matrix
+diag(mat)<-eigenval #Fill the diagonal with the eigevalues
+
+loadings <- pca$loadings %*% sqrt(mat)
+
+loadings[,1:3] #Present the loading of the three first components
+
+
+
+
+```
+
+In order to simpler interpret the loadings, we can rescale them. This done by the transformation above. The tranformation lookes like: 
+
+$\eta_{kj}^* = \sqrt{\eta_{kj}\lambda_j}$
+
+Where $\eta_{kj}$ is the loadings. The is the load, or weight, given to variable j on the component k. The $\lambda_j$ is the eigenvalues, and variance, of the components. The transformation makes interpretation easier. We can now interpret the $\eta_{kj}$ as the correlation coeffcient between variable j and component k. 
+
+We can now take a look at the matrix of our three first components. The first component has a high correlation with Milk, Grocery and Detergents. We can interpret this as a component distinguishing the observations which buy more neccasities from the observations that buy little. The second component is highly correlated with Fresh, Frozen and Delicatessen. This may be interpreted in the direction of luxury goods. 
+
+The third one is harder to interpret. It has a large score on Fresh, but not one any other. The problems with interpreting the component may be a reason to not include it. 
+
+### The components score
+```{r}
+stand.coeff<-loadings %*% diag(1/eigenval)#component score coefficients
+score<-(as.matrix(expenditure_s[,3:8]))%*%stand.coeff
+score[1:10, 1:3]
+
+```
+
+We proceed by calculation the scores. This the individual score each observation has on the components. The components is a linear combination of the original variables: 
+
+$w_k = \eta_{1k}x_1 + \eta_{2k}x_2 + ... + \eta_{6k}x_6$
+
+However we standarize the components: 
+
+
+$\tilde{w_k} = \tilde{\eta_{1k}}x_1 + \tilde{\eta_{2k}}x_2 + ... + \tilde{\eta_{6k}}x_6$
+
+Where: 
+
+$\tilde{\eta_{1k}}= \frac{\eta_{ik}^*}{\lambda_{k}}$
+
+To obtain the scores we multiply the matrix of the standardized data and the component scores. We present the ten first observations score on the three first principal components.  
+
+### Visualizing the observations
+
+
+```{r}
+#Plotting the scores: 
+
+plot(score[,1], score[,2], xlab = "PC1", ylab = "PC2")
+#text(score[,1], score[,2], labels=expenditure$Channel, cex=0.9, font=2) #Naming the scores according to their sector. 
+
+```
+
+The observations are quite centered. However there some variation along both axis, especially along the first principal component. We can plot the observations according to which sector the belong to. The data is divided into "Horeca" and retail. The first category include restaurants, cafes and Hotels. 
+
+```{r}
+#Making a nicer plot: 
+scores <- data.frame(score)
+
+data_m <- cbind(expenditure, scores)
+
+data_m$Channel <- as.factor(data_m$Channel)
+
+levels(data_m$Channel) <- c("Horeca", "Retail")
+
+levels(data_m$Channel)
+
+
+ggplot(data_m, aes(X1, X2, color=Channel)) +
+  geom_point(alpha=0.5) +
+  labs(title = "Two principal components", subtitle = "The two components explain 72 percent of variation of the orignal data") +
+  xlab("PC1") +
+  ylab("PC2") +
+  theme_bw()
+
+
+
+
+```
+The plots shows that the first component makes it possible to distinguish between the two different factors along the axis of the first principal component. Retail typically has a higher score of this component. This means that the observations that are in retail typically buys more of the necessities. The second principal component does not have same predictive power. It seems that a higher score of the second component is somewhat associated with the observations that belong to the Horeca-category. 
+
+
+```{r}
+
+plot12 <- ggplot(data_m, aes(X1, X2, color=as.factor(Channel))) +
+  geom_point(alpha=0.5) +
+  xlab("PC1") +
+  ylab("PC2") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+plot13 <- ggplot(data_m, aes(X1, X3, color=as.factor(Channel))) +
+  geom_point(alpha=0.5) +
+  xlab("PC1") +
+  ylab("PC3") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+plot23 <-  ggplot(data_m, aes(X2, X3, color=as.factor(Channel))) +
+  geom_point(alpha=0.5) +
+  xlab("PC2") +
+  ylab("PC3") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+p <- plot_grid(plot12, plot13, plot23)
+
+title <- ggdraw() + 
+  draw_label(
+    "Comparison of the three components",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0 ) +
+  theme(plot.margin = margin(0, 0, 0, 7))
+
+
+plot_grid(title, p, ncol=1, rel_heights = c(0.1, 1))
+
+```
+We can also look at the density subsetted on the different sectors. With theese plots we can see the different distrubutions: 
+
+```{r}
+plot1_density <- ggplot(data_m, aes(X1, y=as.factor(Channel), fill=as.factor(Channel), color=as.factor(Channel))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC1") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+
+plot2_density <- ggplot(data_m, aes(X2, y=as.factor(Channel), fill=as.factor(Channel), color=as.factor(Channel))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC2") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+plot3_density <-  ggplot(data_m, aes(X3, y=as.factor(Channel), fill=as.factor(Channel), color=as.factor(Channel))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC3") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+
+p_density <- plot_grid(plot1_density, plot2_density, plot3_density)
+
+title_density <- ggdraw() + 
+  draw_label(
+    "Comparison of the three components with sectors",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0 ) +
+  theme(plot.margin = margin(0, 0, 0, 7))
+
+
+plot_grid(title_density, p_density, ncol=1, rel_heights = c(0.1, 1))
+
+
+
+
+```
+The plot shows the different principal component plotted against each other. The picture is the same as before. Both PC1 and PC2 have some predictive power. That is not the case for PC3. It does not separate the different categories in a clear way. This is an argument to choose only to components. 
+
+To conclude, all the different test points toward two or three components. However based on the interpretation, we conclude that two components makes the most sense. PC3 does not have a clear interpretation and is not able to distinguish between the Horeca and retail. 
+
+In addition to this, we performed PCA on only six variables. Our goal is to reduce the dimension of the data. Therefore it makes more sence to reduce the data to only two dimensions. 
+
+We could also use the same kind of plots but looking at the region: 
+
+
+```{r}
+plot12_r <- ggplot(data_m, aes(X1, y=as.factor(Region), fill=as.factor(Region), color=as.factor(Region))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC1") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+  
+
+
+plot13_r <- ggplot(data_m, aes(X2, y=as.factor(Region), fill=as.factor(Region), color=as.factor(Region))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC2") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+plot23_r <-  ggplot(data_m, aes(X3, y=as.factor(Region), fill=as.factor(Region), color=as.factor(Region))) +
+  geom_density_ridges(alpha=0.5) +
+  xlab("PC3") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+
+p_r <- plot_grid(plot12_r, plot13_r, plot23_r)
+
+title_r <- ggdraw() + 
+  draw_label(
+    "Comparison of the three components with region",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0 ) +
+  theme(plot.margin = margin(0, 0, 0, 7))
+
+
+plot_grid(title_r, p_r, ncol=1, rel_heights = c(0.1, 1))
+
+
+
+```
+It does not look like that the principal components can distinguish between the regions. 

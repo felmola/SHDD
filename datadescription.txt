@@ -1,0 +1,14 @@
+The data set "Wholesale customers data.csv" refers to clients of a wholesale distributor.
+ It includes the annual spending in monetary units (m.u.) on diverse product categories.
+ It contains the following variables:
+
+1) Channel: customers' Channel - Horeca (Hotel/Restaurant/Café) (1) or Retail channel (2) (Nominal); 
+2) Region: customers' Region- Lisbon (1), Oporto (2) or Other (3) (Nominal); 
+3) Fresh: annual spending (m.u.) on fresh products (Continuous); 
+4) Milk: annual spending (m.u.) on milk products (Continuous); 
+5) Grocery: annual spending (m.u.) on grocery products (Continuous); 
+6) Frozen: annual spending (m.u.)on frozen products (Continuous);
+7) Detergents_paper: annual spending (m.u.) on detergents and paper products (Continuous) 
+8) delicatessen: annual spending (m.u.) on and delicatessen products (Continuous); 
+
+Analyze the data.	
