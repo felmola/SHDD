@@ -4,6 +4,14 @@
   <component name="RMarkdownSettings">
     <option name="renderProfiles">
       <map>
+        <entry key="file://$PROJECT_DIR$/DA_v2.Rmd">
+          <value>
+            <RMarkdownRenderProfile>
+              <option name="lastOutput" value="$PROJECT_DIR$/DA_v2.pdf" />
+              <option name="outputDirectoryUrl" value="file://$PROJECT_DIR$" />
+            </RMarkdownRenderProfile>
+          </value>
+        </entry>
         <entry key="file://$PROJECT_DIR$/deliverable.Rmd">
           <value>
             <RMarkdownRenderProfile>

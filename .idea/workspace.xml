@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="afb99e50-4573-42df-b4d8-cc29edacd748" name="Changes" comment="" />
+    <list default="true" id="afb99e50-4573-42df-b4d8-cc29edacd748" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DA.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DA.Rmd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DA.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/DA.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DA_v2.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/DA_v2.Rmd" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,6 +19,9 @@
         <option value="RMarkdown.notebook" />
       </list>
     </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -39,5 +48,16 @@
       <updated>1666297236536</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

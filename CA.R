@@ -1,32 +1,12 @@
----
-title: ' Discriminant Analysis'
-author: "Felipe Montealegre"
-date: "2022-10-23"
-output:
-  pdf_document: default
-  html_document: default
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-# Overview of the strategy:
-
-Suppose our client is a Wholesale Distributor that has information on current and past clients expenditure on different products categories. We are required to design a tool to discriminate between smaller clients (i.e., the “Horeca” channel) and bigger clients (i.e., the “Retail” channel) depending on the expenditure per category of products.
-First, we present a general overview of the theoretical aspects of Discriminant Analysis techniques.
-Then we present a general overview of the structure of the data. We show the frequency of observations across channels and the distributions of the variables of interest. We study the assumptions of the model (namely normality and homoskedasticity between classes), comment on them, and transform the data accordingly for the analysis.
-After that, we perform discriminant analysis using Linear Discriminant Analysis, Quadratic Discriminant Analysis and Bayes Discriminant Analysis. We compare different measures of accuracy across models and recommend one of them based on the results.
-
-```{r, echo=FALSE, message=FALSE}
+setwd("C:/Users/felmo/Dropbox/1_personal/_maestria_unibo_(operacional)/_statistics_hdd/_final_project/wholesales")
+#remove.packages("rlang")
+#install.packages("rlang")
 ################################################################################
 # Data setup
 ################################################################################
 #install.packages("tidyverse")
 #install.packages("magrittr")
-#install.packages("bookdown")
 
-library(bookdown)
 library(tidyverse)
 library(magrittr) # https://cran.r-project.org/web/packages/magrittr/vignettes/magrittr.html
 
@@ -43,26 +23,24 @@ data <- data %>%
 levels(data$class) <- list("Horeca"=1, "Retail"=2)
 levels(data$region) <- list("Lisbon"=1, "Oporto"=2, "Other"=3 )
 
-```
+################################################################################
+# Some visualizations and descriptive statistics
+################################################################################
 
-# Descriptive statistics
-
-The table below contains the descriptive statistics of the dataset. [*** general comment on the min max means variances].
-
-```{r, echo=FALSE,  message=FALSE}
+#------ descriptive statistics:
 
 library(pastecs)
 stat.desc(data)
 
-```
+#------ frecuency on factor variables:
 
-The categorical variables are class and region, both of them denoting the type of client (i.e., if the client is a hotel, restaurant, or café (“horeca”)) and the region where the client is based (i.e., Lisbon, Oporto, or other region).67% of the clients belong to the “Horeca” category, and 32% belong to the retail channel. 17% of the clients are located in Lisbon, 11 percent of them are located in Oporto, and the remaining 72% are located in a different location.
-
-```{r, echo=FALSE, message=FALSE}
+#install.packages('epiDisplay')
 library(epiDisplay)
+
 table(data$class)
 tab1(data$class, sort.group = "decreasing", cum.percent = TRUE, graph = FALSE)
 tab1(data$region, sort.group = "decreasing", cum.percent = TRUE, graph = FALSE)
+
 class <- data %>% ggplot(aes(x=class)) +
   geom_bar()
 
@@ -72,20 +50,6 @@ region <- data %>% ggplot(aes(x=region)) +
 library(gridExtra)
 grid.arrange(class, region)
 
-```
-
-The covariates contain information about expenditure in monetary units across 6 different categories:
-
-1. Fresh: annual spending on fresh products.
-2. Milk: annual spending on milk products.
-3. Grocery: annual spending on grocery products.
-4. Frozen: annual spending on frozen products.
-5. Detergents_paper: annual spending on detergents and paper products.
-6. Delicatessen: annual spending (m.u.) on and delicatessen products.
-
-The figure below displays the distributions of each of the covariates. In general, most clients spend between 0k and 30k monetary units a year on all categories. Some clients spend much more than the average, with annual expenditures ranging between 30k and 100k sin some categories. Expenditure on detergents and/or paper, frozen products, and delicatessen products ranges from 0k to 10k approximately. This is expected as they are either luxury goods or goods which frequency is not as high as basic needs food such as fresh products, milk and grocery products in general.
-
-```{r, echo=FALSE,  message=FALSE}
 #------ frecuency of covariates:
 
 library(scales)
@@ -119,13 +83,7 @@ delicatessen <- ggplot(data, aes(x=delicatessen)) +
 
 grid.arrange(fresh, milk, grocery, frozen, detergents_paper, delicatessen)
 
-#https://cran.r-project.org/web/packages/gridExtra/vignettes/arrangeGrob.html
 
-```
-
-The figure below condenses the distributional information across covariates for ease of interpretation.
-
-```{r, echo=FALSE,  message=FALSE}
 #------ density plot (overlapped plots):
 # The successor to reshape2 is tidyr. The equivalent of melt() and dcast() are gather() and spread() respectively.
 
@@ -136,16 +94,7 @@ data %>%
   ggplot(aes(x=value, colour=key)) +
   geom_density() +
   scale_x_continuous(labels = label_number(suffix = suffix, scale = scale))
-```
 
-# Testing the assumptions of the model on the data
-
-LDA assumes that the observations come from a normally distributed DGP with constant variance between classes. This generates decision rules that are linear in the covariates (i.e., it is possible to discriminate observations by a line or a plane, depending on the number of classes). If the homoskedasticity assumption is violated, then it is better to apply QDA. QDA generates decision rules by weighting ***. Bayes ***
-
-We first explore variance equality between individual covariates using Bartlett's test for equal variance across samples for individual variables. Then we perform Cai TT, Ma Z (2013) two sample test of equality of covariance matrices. Bartlett's test strongly rejects the null hypothesis of equality of variance between groups for each of the covariates. This gives us a hit that for each of the covariates, the distribution of the data is quite different across classes. For the Cai and Ma test we strongly reject the null hypothesis that the covariance matrices between classes is equal.
-
-Bartlett's test:
-```{r, echo=FALSE,  message=FALSE}
 
 ################################################################################
 # Testing assumptions (before transforming)
@@ -155,8 +104,10 @@ Bartlett's test:
 
 # Bartlett's test for equal variance across samples for individual variables:
 
+#install.packages("stargazer")
 #install.packages("olsrr")
 #install.packages("xtable")
+library(stargazer)
 library(olsrr)
 library(xtable)
 
@@ -172,8 +123,9 @@ bart_delicatessen <- ols_test_bartlett(temp_data, "delicatessen", group_var = "c
 bart_names <- temp_data %>%
   dplyr::select(fresh, milk, grocery, frozen, detergents_paper, delicatessen) %>%
   names()
+bart_names
 
-decimals <- 1000
+decimals <- 3
 
 bart_pvalues <- c(
   round(bart_fresh[[2]], decimals),
@@ -186,11 +138,9 @@ bart_pvalues <- c(
 
 bart_std <- tibble(bart_names, bart_pvalues)
 bart_std
-```
- 
- Cai TT, Ma Z test:
- 
-```{r, echo=FALSE,  message=FALSE}
+
+stargazer(bart_std, summary=FALSE, rownames=FALSE, out="bart_std_raw.tex")
+
 # Cai TT, Ma Z (2013) two sample test of equality of covariance matrices:
 # https://cran.r-project.org/web/packages/CovTools/CovTools.pdf
 #install.packages("CovTools")
@@ -205,14 +155,9 @@ class_2 <- data %>%
   dplyr::select(fresh, milk, grocery, frozen, detergents_paper, delicatessen)
 
 CovTest2.2013Cai(as.matrix(class_1), as.matrix(class_2))
+stargazer(bart_std, summary=FALSE, rownames=FALSE, out="bart_std_raw.tex")
 
-```
 
-Next, we explore the normality assumptions. First, we compute the Shapiro-Wilk test of normality for each of the covariates individually. For all the individual covariates we strongly reject the null hypothesis of normality. We then perform a Generalized Shapiro-Wilk test for Multivariate Normality. We again strongly reject the null hypothesis of joint normality in the sample.
-
-Shaphiro wilk test:
-
-```{r, echo=FALSE,  message=FALSE}
 #------ normality:
 
 # Shaphiro-Wilk test of normality for individual covariates:
@@ -226,11 +171,14 @@ shap_frozen <- shapiro.test(temp_data$frozen)
 shap_detergents_paper <- shapiro.test(temp_data$detergents_paper)
 shap_delicatessen <- shapiro.test(temp_data$delicatessen)
 
+names(shap_fresh)
+
 shap_names <- temp_data %>%
   dplyr::select(fresh, milk, grocery, frozen, detergents_paper, delicatessen) %>% 
   names()
+shap_names
 
-decimals <- 1000
+decimals <- 3
 
 shap_pvalues <- c(
   round(shap_fresh[[2]], decimals),
@@ -244,11 +192,8 @@ shap_pvalues <- c(
 shap_std <- tibble(shap_names, shap_pvalues)
 shap_std
 
-```
+stargazer(shap_std, summary=FALSE, rownames=FALSE, out="shap_std_raw.tex")
 
-Generalized Shapiro-Wilk test
-
-```{r, echo=FALSE,  message=FALSE}
 
 # Generalized Shapiro-Wilk test for Multivariate Normality:
 
@@ -270,12 +215,6 @@ mvnormtest::mshapiro.test(t(temp_data))
 
 mult.norm(temp_data)$mult.test
 
-```
-
-We decide to apply a log transformation and standardize the data for ease of manipulation and to comply with the model assumptions. It is worth emphasizing that QDA does not require the assumption of equality of covariances between classes, and that Bayes Discriminant rule does not require the assumption of normality in the data.
-As expected, once transformed and standardized, the mean and variance of the transformed covariates are equal to 0 and 1 respectively.
-
-```{r, echo=FALSE,  message=FALSE}
 ################################################################################
 # Data transformation and standardization.
 ################################################################################
@@ -289,16 +228,10 @@ ln_delicatessen<-scale(log(data$delicatessen+1))
 
 data <- cbind(data, ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen)
 
-library(dplyr)
-
 data %>%
   dplyr::select(ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen) %>%
   stat.desc()
 
-```
-The distribution of transformed variables now resembles a normal distribution:
-
-```{r, echo=FALSE,  message=FALSE}
 ################################################################################
 # Some visualizations and descriptive statistics on the transformed data
 ################################################################################
@@ -346,13 +279,6 @@ temp_data %>%
   geom_density() +
   scale_x_continuous(labels = label_number(suffix = suffix, scale = scale))
 
-```
-Nonetheless, the same normality tests as before are performed on the transformed data. 
-The proportion of observations in each class should be considered when creating the priors. If not and the probabilities of classification do not match the class proportions, the classification procedure will be erroneous. Even though for two out of the six variables the hypothesis of homoskedasticity is still dejected, the generalized two-sample test of equality of covariances strongly rejects the null hypothesis of homoskedasticity.
-
-Bartlett’s test:
-
-```{r, echo=FALSE,  message=FALSE}
 ################################################################################
 # Testing assumptions  on the transformed data.
 ################################################################################
@@ -377,6 +303,7 @@ bart_delicatessen <- ols_test_bartlett(temp_data, "ln_delicatessen", group_var =
 bart_names <- temp_data %>%
   dplyr::select(ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen) %>%
   names()
+bart_names
 
 decimals <- 3
 
@@ -392,11 +319,8 @@ bart_pvalues <- c(
 bart_std <- tibble(bart_names, bart_pvalues)
 bart_std
 
-```
+stargazer(bart_std, summary=FALSE, rownames=FALSE, out="bart_std_tra.tex")
 
-Cai TT, Ma Z test:
-
-```{r, echo=FALSE,  message=FALSE}
 # Cai TT, Ma Z (2013) two sample test of equality of covariance matrices:
 # https://cran.r-project.org/web/packages/CovTools/CovTools.pdf
 #install.packages("CovTools")
@@ -405,19 +329,16 @@ library(CovTools)
 class_1 <- data %>%
   dplyr::filter(class == "Horeca") %>%
   dplyr::select(ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen)
+class_1
 
 class_2 <- data %>%
   dplyr::filter(class == "Retail") %>%
   dplyr::select(ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen)
+class_2
 
 CovTest2.2013Cai(as.matrix(class_1), as.matrix(class_2))
+names(CovTest2.2013Cai(as.matrix(class_1), as.matrix(class_2)))
 
-```
-
-A similar story is told for the normality tests. The hypothesis of normality, both at the individual variable level and as a joint distribution of the covariates is strongly rejected. In a nutshell, the data is neither normally distributed nor homoscedastic across classes.
-
-Shaphiro wilk test:
-```{r, echo=FALSE,  message=FALSE}
 #------ normality:
 
 # Shaphiro-Wilk test of normality for individual covariates:
@@ -432,11 +353,14 @@ shap_frozen <- shapiro.test(temp_data$ln_frozen)
 shap_detergents_paper <- shapiro.test(temp_data$ln_detergents_paper)
 shap_delicatessen <- shapiro.test(temp_data$ln_delicatessen)
 
+names(shap_fresh)
+
 shap_names <- temp_data %>%
   dplyr::select(ln_fresh, ln_milk, ln_grocery, ln_frozen, ln_detergents_paper, ln_delicatessen) %>% 
   names()
+shap_names
 
-decimals <- 1000
+decimals <- 3
 
 shap_pvalues <- c(
   round(shap_fresh[[2]], decimals),
@@ -450,11 +374,9 @@ shap_pvalues <- c(
 shap_std <- tibble(shap_names, shap_pvalues)
 shap_std
 
+stargazer(shap_std, summary=FALSE, rownames=FALSE, out="shap_std_tra.tex")
 
-```
 
-Generalized Shaphiro wilk test:
-```{r, echo=FALSE,  message=FALSE}
 # Generalized Shapiro-Wilk test for Multivariate Normality:
 
 #install.packages("QuantPsyc")
@@ -474,13 +396,7 @@ temp_data %>%
 mvnormtest::mshapiro.test(t(temp_data))
 
 mult.norm(temp_data)$mult.test
-```
 
-# Discriminant Analysis
-
-The total number of observations are split into two groups: the "training" group and the "testing” group using a split ratio of 0.65. The training subsample is used to create the discriminant rules while the testing subset is used to determine the different accuracy measures. After splitting the data, it is verified that the proportions of observations in the two classes are maintained both in the training set and in the testing set. The decomposition proportions are presented below.
-
-```{r, echo=FALSE,  message=FALSE}
 ################################################################################
 ################################################################################
 # Discriminant Analisys
@@ -512,8 +428,8 @@ prop_training <- table(training$class)/length(training$class)
 n_testing <- table(testing$class)
 prop_testing <- table(testing$class)/length(testing$class)
 
-#names(table(testing$class)/length(testing$class))
-#prop_complete[[1]]
+names(table(testing$class)/length(testing$class))
+prop_complete[[1]]
 
 prop_names <- c(
   "Complete dataset",
@@ -550,14 +466,11 @@ total <- c(
   n_values_1[2] + n_values_2[2],
   n_values_1[3] + n_values_2[3]
 )
-prop_table <- tibble(prop_names, n_values_1, prop_values_1, n_values_2, prop_values_2, total)
+prop_table <- tibble(prop_names,n_values_1, format(prop_values_1, digits = 3), n_values_2, format(prop_values_2, digits = 3), total)
 prop_table
+stargazer(prop_table, summary=FALSE, rownames=FALSE, out="prop.tex")
 
 
-```
-The assumptions analysis in the previous code suggested that Bayes DA was more suited for analyzing the data and that QDA better than LDA. The table below presents accuracy measures for each of the three methods for discriminating between classes. Note that these accuracy measures use the training subset. The discriminating method with the highest accuracy rate is LDA (95%) while QDA and BAYES have accuracy rates of 93.7% and 94.4% respectively. The false positive rate is quite low for all discriminating methods, all range between 3% and 5%. Note, however, that because the accuracy is based on the same observations that were used to compute the discriminant rules, this method of evaluation is naively optimistic.
-
-```{r, echo=FALSE,  message=FALSE, results=FALSE}
 ################################################################################
 # Training sets
 ################################################################################
@@ -569,10 +482,24 @@ temp_data <- training
 
 model<-lda(formula=class~region+ln_fresh+ln_milk+ln_grocery+ln_frozen+ln_detergents_paper+ln_delicatessen,data=temp_data)
 model
+names(model)
+lda_function <- model[4]
+
+temp_data %>% mutate(regionOporto = 0)
+temp_data %<>% mutate(regionOporto = ifelse(region == "Oporto",1,0))
+temp_data %>% mutate(regionOther = 0)
+temp_data %<>% mutate(regionOther = ifelse(region == "Other",1,0))
+
+#install.packages("collapse")
+#install.packages("doBy")
+library(collapse)
+library(doBy)
 
 #install.packages("biotools")
 library(biotools)
 pred<-predict(model,data=temp_data)$class
+
+db <- tibble(temp_data, pred)
 
 confmat<-confusionmatrix(temp_data$class, pred)
 confmat
@@ -714,20 +641,14 @@ fit_scores_BAYES_train <- c(accuracy, misclassification_rate, sensitivity, fpr, 
 
 #------ building up the table:
 
-fit_table <- tibble(fit_names, fit_scores_LDA_train, fit_scores_QDA_train, fit_scores_BAYES_train)
+fit_table <- tibble(fit_names,
+                    format(fit_scores_LDA_train, digits = 2),
+                    format(fit_scores_QDA_train, digits = 2),
+                    format(fit_scores_BAYES_train, digits = 2))
 fit_table
+stargazer(fit_table, summary=FALSE, rownames=FALSE, out="acc_train.tex")
 
 
-```
-
-
-```{r, echo=FALSE,  message=FALSE}
-fit_table
-```
-
-The cross-validation criterion uses the training subset we had previously defined. The table below presents the accuracy measures under the testing subset. The accuracy rate of LDA is around 86% while QDA and BAYES are the same at 87%. The misclassification rates range around 14% to 16% being the highest for the LDA. In general, the measures of accuracy are very close across classification methods which suggest that means between classes are quite different while variance within classes is low. Note also that the similarity of accuracy measures between QDA and BAYES could Indicate that the estimates of the variance/covariance matrices are accurate enough.
-
-```{r, echo=FALSE,  message=FALSE, results=FALSE}
 ################################################################################
 # Testing sets
 ################################################################################
@@ -884,23 +805,13 @@ fit_scores_BAYES_test <- c(accuracy, misclassification_rate, sensitivity, fpr, s
 
 #------ building up the table:
 
-fit_table <- tibble(fit_names, fit_scores_LDA_test, fit_scores_QDA_test, fit_scores_BAYES_test)
+fit_table <- tibble(fit_names,
+                    format(fit_scores_LDA_test, digits = 2),
+                    format(fit_scores_QDA_test, digits = 2),
+                    format(fit_scores_BAYES_test, digits = 2))
 fit_table
+stargazer(fit_table, summary=FALSE, rownames=FALSE, out="acc_test.tex")
 
-
-```
-
-```{r, echo=FALSE,  message=FALSE}
-
-fit_table
-
-```
-
-The partitioning rules for each of the partitioning methods are presented below. The boundary between the pink and light blue areas is the partioning rule. The observations marked in Blue are correctly classfied. The observations in red are missclassified. "H" observations are the ones that belong to the "Horeca" class, while "R" observations belong to the "Retail" class.
-
-**LDA:**
-
-```{r, echo=FALSE,  message=FALSE}
 #==============================================================================
 # Visualization of partition rules
 #==============================================================================
@@ -908,41 +819,57 @@ The partitioning rules for each of the partitioning methods are presented below.
 library(klaR)
 
 partimat(class~ln_fresh+ln_milk+ln_grocery+ln_frozen+ln_detergents_paper+ln_delicatessen, data = testing, method = "lda",
+         nplots.hor = 3,
          col.mean = "black",
          col.correct="blue",
          col.wrong="firebrick3",
 )
 
 
-```
-
-**QDA:**
-
-```{r, echo=FALSE,  message=FALSE}
 partimat(class~ln_fresh+ln_milk+ln_grocery+ln_frozen+ln_detergents_paper+ln_delicatessen, data = testing, method = "qda",
+         nplots.hor = 3,
          col.mean = "black",
          col.correct="blue",
          col.wrong="firebrick3",
 )
-```
 
-**Bayes:**
-
-```{r, echo=FALSE,  message=FALSE}
 partimat(class~ln_fresh+ln_milk+ln_grocery+ln_frozen+ln_detergents_paper+ln_delicatessen, data = testing, method = "naiveBayes",
+         nplots.hor = 3,
          col.mean = "black",
          col.correct="blue",
          col.wrong="firebrick3",
 )
 
-```
-
-# Additional Analisys
-
-We applied the three methods for discriminating observations to the raw data. This is an additional measure of the efficiency of the models and gives us a hint wheter transforming and standardizing the data affects the results in any way. The table below shows the accuracy rates for the raw data.
 
 
-```{r, echo=FALSE,  message=FALSE, results=FALSE}
+
+jpeg("lda.jpeg") 
+lda <- partimat(class~ln_milk+ln_detergents_paper, data = testing, method = "lda",
+         nplots.hor = 3,
+         col.mean = "black",
+         col.correct="blue",
+         col.wrong="firebrick3",
+)
+dev.off()
+
+jpeg("qda.jpeg") 
+qda <- partimat(class~ln_milk+ln_detergents_paper, data = testing, method = "qda",
+         nplots.hor = 3,
+         col.mean = "black",
+         col.correct="blue",
+         col.wrong="firebrick3",
+)
+dev.off()
+
+jpeg("bayes.jpeg") 
+bayes <- partimat(class~ln_milk+ln_detergents_paper, data = testing, method = "naiveBayes",
+         nplots.hor = 3,
+         col.mean = "black",
+         col.correct="blue",
+         col.wrong="firebrick3",
+)
+dev.off()
+
 ################################################################################
 # Testing sets [untransformed data]
 ################################################################################
@@ -1099,24 +1026,38 @@ fit_scores_BAYES_test <- c(accuracy, misclassification_rate, sensitivity, fpr, s
 
 #------ building up the table:
 
-fit_table <- tibble(fit_names, fit_scores_LDA_test, fit_scores_QDA_test, fit_scores_BAYES_test)
+fit_table <- tibble(fit_names,
+                    format(fit_scores_LDA_test, digits = 2),
+                    format(fit_scores_QDA_test, digits = 2),
+                    format(fit_scores_BAYES_test, digits = 2))
 fit_table
-
-
-```
-
-```{r, echo=FALSE,  message=FALSE}
-fit_table
-
-```
-
-```{r, echo=FALSE,  message=FALSE}
-
-
-```
+stargazer(fit_table, summary=FALSE, rownames=FALSE, out="acc_test_raw.tex")
 
 
 
+# https://rpubs.com/ZheWangDataAnalytics/DecisionBoundary
+# https://www.geeksforgeeks.org/quadratic-discriminant-analysis/?ref=rp
 
-# THE END
+################################################################################
+# ANNEX: Helpful links and code to keep
+################################################################################
+
+#https://rpubs.com/ZheWangDataAnalytics/DecisionBoundary
+#https://www.r-bloggers.com/2021/05/linear-discriminant-analysis-in-r/
+
+#------ COrrelation plots:
+
+# https://plotly.com/ggplot2/splom/
+#install.packages("plotly")
+#install.packages("GGally")
+library(plotly)
+library(GGally)
+
+data %>%
+  dplyr::select(fresh, milk, grocery, frozen, detergents_paper, delicatessen) %>%
+  ggpairs(ggplot2::aes(colour=data$class)) %>%
+  ggplotly()
+
+
+
 
